@@ -40,7 +40,7 @@ async function setCache(sccacheDirectory: string): Promise<void> {
   );
   //todo: make this input
   core.exportVariable("SCCACHE_GHA_CACHE_TO", "sccache");
-  core.exportVariable("SCCACHE_GHA_CACHE_TO", "sccache");
+  core.exportVariable("SCCACHE_GHA_CACHE_FROM", "sccache");
   core.addPath(sccacheDirectory);
   core.debug("Configured sccache!");
 }
