@@ -58,7 +58,8 @@ async function getLatestRelease(): Promise<string> {
 async function getDownloadUrl(): Promise<string> {
   const arch = process.arch === "x64" ? "x86_64" : "aarch64";
   const platform = getRustPlatform();
-  if (!platform) {
+  if (!platform || (platform === "pc-windows-msvc" && arch === "aarch64")) {
+    // sccache does not provide prebuilt binaries for arm64 Windows
     throw new Error(`Unsupported platform: ${process.platform}`);
   }
   const version = await getLatestRelease();

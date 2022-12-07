@@ -86,7 +86,8 @@ function getDownloadUrl() {
     return __awaiter(this, void 0, void 0, function* () {
         const arch = process.arch === "x64" ? "x86_64" : "aarch64";
         const platform = getRustPlatform();
-        if (!platform) {
+        if (!platform || (platform === "pc-windows-msvc" && arch === "aarch64")) {
+            // sccache does not provide prebuilt binaries for arm64 Windows
             throw new Error(`Unsupported platform: ${process.platform}`);
         }
         const version = yield getLatestRelease();
