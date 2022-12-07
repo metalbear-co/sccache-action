@@ -13,7 +13,7 @@ import * as path from "path";
 const VERSION = "0.3.1-gha";
 const TOOL_NAME = "sccache";
 const SCCACHE_LATEST_RELEASE =
-  "https://api.github.com/repos/mozilla/sccache/releases";
+  "https://api.github.com/repos/mozilla/sccache/releases/latest";
 const GITHUB_API_ACCEPT_HEADER = "application/vnd.github+json";
 const USER_AGENT = "metalbear-co/sccache-action";
 
