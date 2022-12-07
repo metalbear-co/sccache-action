@@ -1,6 +1,6 @@
 {
   "name": "sccache-rust-action",
-  "version": "0.1.0",
+  "version": "1.0.2",
   "private": true,
   "description": "sccache Rust Action",
   "main": "lib/main.js",
