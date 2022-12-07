@@ -25,6 +25,7 @@ function setCache(sccacheDirectory: string): void {
   if (process.platform == "win32") {
     binaryPath += ".exe";
   }
+  core.debug("setting binary path to " + binaryPath);
   core.exportVariable("RUSTC_WRAPPER", binaryPath);
   if (!(process.env.ACTIONS_CACHE_URL && process.env.ACTIONS_RUNTIME_TOKEN)) {
     throw "Missing environment variables for cache";
