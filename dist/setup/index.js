@@ -6576,12 +6576,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
-const tool_cache_1 = __importDefault(__nccwpck_require__(7784));
+const tool_cache_1 = __nccwpck_require__(7784);
 const path = __importStar(__nccwpck_require__(1017));
 // Todo: make this input
 const VERSION = "0.3.1";
@@ -6620,17 +6617,17 @@ function setCache(sccacheDirectory) {
 function guardedRun() {
     return __awaiter(this, void 0, void 0, function* () {
         core.debug("Trying to find cached sccache ;)");
-        const sccacheDirectory = tool_cache_1.default.find(TOOL_NAME, VERSION, process.platform);
+        const sccacheDirectory = (0, tool_cache_1.find)(TOOL_NAME, VERSION, process.platform);
         if (sccacheDirectory) {
             core.debug("Found cached sccache");
             return setCache(sccacheDirectory);
         }
         core.debug("Downloading sccache");
-        const downloadPath = yield tool_cache_1.default.downloadTool(getDownloadPath());
+        const downloadPath = yield (0, tool_cache_1.downloadTool)(getDownloadPath());
         core.debug("Extracting sccache");
-        const extractedPath = yield tool_cache_1.default.extractTar(downloadPath);
+        const extractedPath = yield (0, tool_cache_1.extractTar)(downloadPath);
         core.debug("Caching sccache");
-        yield tool_cache_1.default.cacheDir(extractedPath, TOOL_NAME, VERSION);
+        yield (0, tool_cache_1.cacheDir)(extractedPath, TOOL_NAME, VERSION);
         setCache(sccacheDirectory);
     });
 }

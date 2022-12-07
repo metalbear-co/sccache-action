@@ -1,5 +1,5 @@
 import * as core from "@actions/core";
-import tc from "@actions/tool-cache";
+import { cacheDir, downloadTool, extractTar, find } from "@actions/tool-cache";
 import * as path from "path";
 
 // Todo: make this input
@@ -44,17 +44,17 @@ function setCache(sccacheDirectory: string): void {
 
 async function guardedRun(): Promise<void> {
   core.debug("Trying to find cached sccache ;)");
-  const sccacheDirectory = tc.find(TOOL_NAME, VERSION, process.platform);
+  const sccacheDirectory = find(TOOL_NAME, VERSION, process.platform);
   if (sccacheDirectory) {
     core.debug("Found cached sccache");
     return setCache(sccacheDirectory);
   }
   core.debug("Downloading sccache");
-  const downloadPath = await tc.downloadTool(getDownloadPath());
+  const downloadPath = await downloadTool(getDownloadPath());
   core.debug("Extracting sccache");
-  const extractedPath = await tc.extractTar(downloadPath);
+  const extractedPath = await extractTar(downloadPath);
   core.debug("Caching sccache");
-  await tc.cacheDir(extractedPath, TOOL_NAME, VERSION);
+  await cacheDir(extractedPath, TOOL_NAME, VERSION);
   setCache(sccacheDirectory);
 }
 

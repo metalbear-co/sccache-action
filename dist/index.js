@@ -40,8 +40,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
+const tool_cache_1 = __nccwpck_require__(7784);
 const path = __importStar(__nccwpck_require__(1017));
-const tc = __nccwpck_require__(7784);
 // Todo: make this input
 const VERSION = "0.3.1";
 const TOOL_NAME = "sccache";
@@ -63,32 +63,33 @@ function setCache(sccacheDirectory) {
     if (process.platform == "win32") {
         binaryPath += ".exe";
     }
+    core.debug("setting binary path to " + binaryPath);
     core.exportVariable("RUSTC_WRAPPER", binaryPath);
     if (!(process.env.ACTIONS_CACHE_URL && process.env.ACTIONS_RUNTIME_TOKEN)) {
-        throw ("Missing environment variables for cache");
+        throw "Missing environment variables for cache";
     }
-    core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL);
-    core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN);
+    core.exportVariable("ACTIONS_CACHE_URL", process.env.ACTIONS_CACHE_URL);
+    core.exportVariable("ACTIONS_RUNTIME_TOKEN", process.env.ACTIONS_RUNTIME_TOKEN);
     //todo: make this input
-    core.exportVariable('SCCACHE_GHA_CACHE_TO', 'sccache');
-    core.exportVariable('SCCACHE_GHA_CACHE_TO', 'sccache');
+    core.exportVariable("SCCACHE_GHA_CACHE_TO", "sccache");
+    core.exportVariable("SCCACHE_GHA_CACHE_TO", "sccache");
     core.addPath(sccacheDirectory);
     core.debug("Configured sccache!");
 }
 function guardedRun() {
     return __awaiter(this, void 0, void 0, function* () {
         core.debug("Trying to find cached sccache ;)");
-        let sccacheDirectory = tc.find(TOOL_NAME, VERSION, process.platform);
+        const sccacheDirectory = (0, tool_cache_1.find)(TOOL_NAME, VERSION, process.platform);
         if (sccacheDirectory) {
             core.debug("Found cached sccache");
             return setCache(sccacheDirectory);
         }
         core.debug("Downloading sccache");
-        let downloadPath = yield tc.downloadTool(getDownloadPath());
+        const downloadPath = yield (0, tool_cache_1.downloadTool)(getDownloadPath());
         core.debug("Extracting sccache");
-        const extractedPath = yield tc.extractTar(downloadPath);
+        const extractedPath = yield (0, tool_cache_1.extractTar)(downloadPath);
         core.debug("Caching sccache");
-        yield tc.cacheDir(extractedPath, TOOL_NAME, VERSION);
+        yield (0, tool_cache_1.cacheDir)(extractedPath, TOOL_NAME, VERSION);
         setCache(sccacheDirectory);
     });
 }
