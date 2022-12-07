@@ -6579,6 +6579,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const exec_1 = __nccwpck_require__(1514);
+const http_client_1 = __nccwpck_require__(6255);
 const tool_cache_1 = __nccwpck_require__(7784);
 const fs_1 = __nccwpck_require__(7147);
 const path = __importStar(__nccwpck_require__(1017));
@@ -6587,17 +6588,48 @@ const path = __importStar(__nccwpck_require__(1017));
 // Todo: make this input
 const VERSION = "0.3.1-gha";
 const TOOL_NAME = "sccache";
-function getDownloadPath() {
+const SCCACHE_LATEST_RELEASE = "https://api.github.com/repos/mozilla/sccache/releases";
+const GITHUB_API_ACCEPT_HEADER = "application/vnd.github+json";
+const USER_AGENT = "metalbear-co/sccache-action";
+function getRustPlatform() {
     switch (process.platform) {
         case "darwin":
-            return `https://github.com/aviramha/sccache/releases/download/v${VERSION}/sccache-v${VERSION}-x86_64-apple-darwin.tar.gz`;
+            return "apple-darwin";
         case "linux":
-            return `https://github.com/aviramha/sccache/releases/download/v${VERSION}/sccache-v${VERSION}-x86_64-unknown-linux-musl.tar.gz`;
+            return "unknown-linux-musl";
         case "win32":
-            return `https://github.com/aviramha/sccache/releases/download/v${VERSION}/sccache-v${VERSION}-x86_64-pc-windows-msvc.tar.gz`;
+            return "pc-windows-msvc";
         default:
-            throw new Error(`Unsupported platform: ${process.platform}`);
+            return "";
     }
+}
+function getLatestRelease() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const http = new http_client_1.HttpClient(USER_AGENT);
+        const res = yield http.get(SCCACHE_LATEST_RELEASE, {
+            Accept: GITHUB_API_ACCEPT_HEADER,
+        });
+        if (res.message.statusCode !== http_client_1.HttpCodes.OK) {
+            throw new Error(`Error getting latest release: ${res.message.statusCode} ${res.message.statusMessage}`);
+        }
+        const { tag_name, assets, } = JSON.parse(yield res.readBody());
+        if (assets.length === 0) {
+            throw new Error(`Cannot find any prebuilt binaries for version ${tag_name}`);
+        }
+        return tag_name;
+    });
+}
+function getDownloadPath() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const arch = process.arch === "x64" ? "x86_64" : "aarch64";
+        const platform = getRustPlatform();
+        if (!platform) {
+            throw new Error(`Unsupported platform: ${process.platform}`);
+        }
+        const version = yield getLatestRelease();
+        const assetName = `sccache-${version}-${arch}-${platform}.tar.gz`;
+        return `https://github.com/aviramha/sccache/releases/download/${version}/${assetName}`;
+    });
 }
 function setCache(sccacheDirectory) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -6634,7 +6666,7 @@ function guardedRun() {
             return;
         }
         core.debug("Downloading sccache");
-        const downloadPath = yield (0, tool_cache_1.downloadTool)(getDownloadPath());
+        const downloadPath = yield (0, tool_cache_1.downloadTool)(yield getDownloadPath());
         core.debug("Extracting sccache");
         const extractedPath = yield (0, tool_cache_1.extractTar)(downloadPath, undefined, [
             "xz",

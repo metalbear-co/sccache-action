@@ -1,6 +1,8 @@
 import * as core from "@actions/core";
 import { exec } from "@actions/exec";
+import { HttpClient, HttpCodes } from "@actions/http-client";
 import { cacheDir, downloadTool, extractTar, find } from "@actions/tool-cache";
+import { Endpoints } from "@octokit/types";
 import { promises as fs } from "fs";
 import * as path from "path";
 
@@ -9,18 +11,58 @@ import * as path from "path";
 // Todo: make this input
 const VERSION = "0.3.1-gha";
 const TOOL_NAME = "sccache";
+const SCCACHE_LATEST_RELEASE =
+  "https://api.github.com/repos/mozilla/sccache/releases";
+const GITHUB_API_ACCEPT_HEADER = "application/vnd.github+json";
+const USER_AGENT = "metalbear-co/sccache-action";
 
-function getDownloadPath(): string {
+function getRustPlatform(): string {
   switch (process.platform) {
     case "darwin":
-      return `https://github.com/aviramha/sccache/releases/download/v${VERSION}/sccache-v${VERSION}-x86_64-apple-darwin.tar.gz`;
+      return "apple-darwin";
     case "linux":
-      return `https://github.com/aviramha/sccache/releases/download/v${VERSION}/sccache-v${VERSION}-x86_64-unknown-linux-musl.tar.gz`;
+      return "unknown-linux-musl";
     case "win32":
-      return `https://github.com/aviramha/sccache/releases/download/v${VERSION}/sccache-v${VERSION}-x86_64-pc-windows-msvc.tar.gz`;
+      return "pc-windows-msvc";
     default:
-      throw new Error(`Unsupported platform: ${process.platform}`);
+      return "";
   }
+}
+
+async function getLatestRelease(): Promise<string> {
+  const http = new HttpClient(USER_AGENT);
+  const res = await http.get(SCCACHE_LATEST_RELEASE, {
+    Accept: GITHUB_API_ACCEPT_HEADER,
+  });
+  if (res.message.statusCode !== HttpCodes.OK) {
+    throw new Error(
+      `Error getting latest release: ${res.message.statusCode} ${res.message.statusMessage}`
+    );
+  }
+
+  const {
+    tag_name,
+    assets,
+  }: Endpoints["GET /repos/{owner}/{repo}/releases/latest"]["response"]["data"] =
+    JSON.parse(await res.readBody());
+  if (assets.length === 0) {
+    throw new Error(
+      `Cannot find any prebuilt binaries for version ${tag_name}`
+    );
+  }
+
+  return tag_name;
+}
+
+async function getDownloadPath(): Promise<string> {
+  const arch = process.arch === "x64" ? "x86_64" : "aarch64";
+  const platform = getRustPlatform();
+  if (!platform) {
+    throw new Error(`Unsupported platform: ${process.platform}`);
+  }
+  const version = await getLatestRelease();
+  const assetName = `sccache-${version}-${arch}-${platform}.tar.gz`;
+  return `https://github.com/aviramha/sccache/releases/download/${version}/${assetName}`;
 }
 
 async function setCache(sccacheDirectory: string): Promise<void> {
@@ -58,7 +100,7 @@ async function guardedRun(): Promise<void> {
     return;
   }
   core.debug("Downloading sccache");
-  const downloadPath = await downloadTool(getDownloadPath());
+  const downloadPath = await downloadTool(await getDownloadPath());
   core.debug("Extracting sccache");
   const extractedPath = await extractTar(downloadPath, undefined, [
     "xz",
