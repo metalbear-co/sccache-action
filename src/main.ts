@@ -3,6 +3,7 @@ import { exec } from "@actions/exec";
 import { HttpClient, HttpCodes } from "@actions/http-client";
 import { cacheDir, downloadTool, extractTar, find } from "@actions/tool-cache";
 import { Endpoints } from "@octokit/types";
+import { createHash } from "crypto";
 import { promises as fs } from "fs";
 import * as path from "path";
 
@@ -54,7 +55,7 @@ async function getLatestRelease(): Promise<string> {
   return tag_name;
 }
 
-async function getDownloadPath(): Promise<string> {
+async function getDownloadUrl(): Promise<string> {
   const arch = process.arch === "x64" ? "x86_64" : "aarch64";
   const platform = getRustPlatform();
   if (!platform) {
@@ -63,6 +64,30 @@ async function getDownloadPath(): Promise<string> {
   const version = await getLatestRelease();
   const assetName = `sccache-${version}-${arch}-${platform}.tar.gz`;
   return `https://github.com/aviramha/sccache/releases/download/${version}/${assetName}`;
+}
+
+async function getExpectedSha256Hash(downloadUrl: string): Promise<string> {
+  const sha256Url = `${downloadUrl}.sha256`;
+  const http = new HttpClient(USER_AGENT);
+  const res = await http.get(sha256Url);
+  if (res.message.statusCode !== HttpCodes.OK) {
+    throw new Error(
+      `Error getting release SHA-256: ${res.message.statusCode} ${res.message.statusMessage}`
+    );
+  }
+  return res.readBody();
+}
+
+async function download(): Promise<string> {
+  const downloadUrl = await getDownloadUrl();
+  const expectedHash = await getExpectedSha256Hash(downloadUrl);
+  const downloadPath = await downloadTool(downloadUrl);
+  const file = await fs.readFile(downloadPath);
+  const actualHash = createHash("sha256").update(file).digest("hex");
+  if (actualHash !== expectedHash) {
+    `SHA-256 hash did not match, expected ${expectedHash}, got ${actualHash}`;
+  }
+  return downloadPath;
 }
 
 async function setCache(sccacheDirectory: string): Promise<void> {
@@ -100,7 +125,7 @@ async function guardedRun(): Promise<void> {
     return;
   }
   core.debug("Downloading sccache");
-  const downloadPath = await downloadTool(await getDownloadPath());
+  const downloadPath = await download();
   core.debug("Extracting sccache");
   const extractedPath = await extractTar(downloadPath, undefined, [
     "xz",

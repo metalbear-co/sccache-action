@@ -43,6 +43,7 @@ const core = __importStar(__nccwpck_require__(2186));
 const exec_1 = __nccwpck_require__(1514);
 const http_client_1 = __nccwpck_require__(6255);
 const tool_cache_1 = __nccwpck_require__(7784);
+const crypto_1 = __nccwpck_require__(6113);
 const fs_1 = __nccwpck_require__(7147);
 const path = __importStar(__nccwpck_require__(1017));
 // WE're using a patched version provided on my repo because
@@ -81,7 +82,7 @@ function getLatestRelease() {
         return tag_name;
     });
 }
-function getDownloadPath() {
+function getDownloadUrl() {
     return __awaiter(this, void 0, void 0, function* () {
         const arch = process.arch === "x64" ? "x86_64" : "aarch64";
         const platform = getRustPlatform();
@@ -91,6 +92,30 @@ function getDownloadPath() {
         const version = yield getLatestRelease();
         const assetName = `sccache-${version}-${arch}-${platform}.tar.gz`;
         return `https://github.com/aviramha/sccache/releases/download/${version}/${assetName}`;
+    });
+}
+function getExpectedSha256Hash(downloadUrl) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const sha256Url = `${downloadUrl}.sha256`;
+        const http = new http_client_1.HttpClient(USER_AGENT);
+        const res = yield http.get(sha256Url);
+        if (res.message.statusCode !== http_client_1.HttpCodes.OK) {
+            throw new Error(`Error getting release SHA-256: ${res.message.statusCode} ${res.message.statusMessage}`);
+        }
+        return res.readBody();
+    });
+}
+function download() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const downloadUrl = yield getDownloadUrl();
+        const expectedHash = yield getExpectedSha256Hash(downloadUrl);
+        const downloadPath = yield (0, tool_cache_1.downloadTool)(downloadUrl);
+        const file = yield fs_1.promises.readFile(downloadPath);
+        const actualHash = (0, crypto_1.createHash)("sha256").update(file).digest("hex");
+        if (actualHash !== expectedHash) {
+            `SHA-256 hash did not match, expected ${expectedHash}, got ${actualHash}`;
+        }
+        return downloadPath;
     });
 }
 function setCache(sccacheDirectory) {
@@ -128,7 +153,7 @@ function guardedRun() {
             return;
         }
         core.debug("Downloading sccache");
-        const downloadPath = yield (0, tool_cache_1.downloadTool)(yield getDownloadPath());
+        const downloadPath = yield download();
         core.debug("Extracting sccache");
         const extractedPath = yield (0, tool_cache_1.extractTar)(downloadPath, undefined, [
             "xz",
