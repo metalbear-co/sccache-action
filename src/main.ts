@@ -22,9 +22,6 @@ function getDownloadPath(): string {
 
 async function setCache(sccacheDirectory: string): Promise<void> {
   core.debug("Configuring use of sccache from from path: " + sccacheDirectory);
-  // List all files in sscacheDirectory
-  const files = await fs.readdir(sccacheDirectory);
-  core.debug("Files in sccache directory: " + files);
   let binaryPath = path.join(sccacheDirectory, "sccache");
   if (process.platform == "win32") {
     binaryPath += ".exe";

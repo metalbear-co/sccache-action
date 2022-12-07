@@ -6599,9 +6599,6 @@ function getDownloadPath() {
 function setCache(sccacheDirectory) {
     return __awaiter(this, void 0, void 0, function* () {
         core.debug("Configuring use of sccache from from path: " + sccacheDirectory);
-        // List all files in sscacheDirectory
-        const files = yield fs_1.promises.readdir(sccacheDirectory);
-        core.debug("Files in sccache directory: " + files);
         let binaryPath = path.join(sccacheDirectory, "sccache");
         if (process.platform == "win32") {
             binaryPath += ".exe";
