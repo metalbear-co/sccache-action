@@ -98,7 +98,7 @@ function guardedRun() {
         const downloadPath = yield (0, tool_cache_1.downloadTool)(getDownloadPath());
         core.debug("Extracting sccache");
         const extractedPath = yield (0, tool_cache_1.extractTar)(downloadPath, undefined, [
-            "--xz",
+            "xz",
             "--strip-components",
             "1",
         ]);
