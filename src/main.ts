@@ -60,6 +60,7 @@ async function guardedRun(): Promise<void> {
   const downloadPath = await downloadTool(getDownloadPath());
   core.debug("Extracting sccache");
   const extractedPath = await extractTar(downloadPath, undefined, [
+    "--xz",
     "--strip-components",
     "1",
   ]);
