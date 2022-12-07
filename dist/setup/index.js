@@ -6629,7 +6629,7 @@ function getDownloadUrl() {
         }
         const version = yield getLatestRelease();
         const assetName = `sccache-${version}-${arch}-${platform}.tar.gz`;
-        return `https://github.com/aviramha/sccache/releases/download/${version}/${assetName}`;
+        return `https://github.com/mozilla/sccache/releases/download/${version}/${assetName}`;
     });
 }
 function getExpectedSha256Hash(downloadUrl) {

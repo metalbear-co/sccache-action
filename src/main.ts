@@ -63,7 +63,7 @@ async function getDownloadUrl(): Promise<string> {
   }
   const version = await getLatestRelease();
   const assetName = `sccache-${version}-${arch}-${platform}.tar.gz`;
-  return `https://github.com/aviramha/sccache/releases/download/${version}/${assetName}`;
+  return `https://github.com/mozilla/sccache/releases/download/${version}/${assetName}`;
 }
 
 async function getExpectedSha256Hash(downloadUrl: string): Promise<string> {
