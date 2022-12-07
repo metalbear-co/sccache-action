@@ -3992,16 +3992,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(186));
-const exec_1 = __importDefault(__nccwpck_require__(514));
+const exec_1 = __nccwpck_require__(514);
 function guardedRun() {
     return __awaiter(this, void 0, void 0, function* () {
         core.debug("Gathering statistics");
-        exec_1.default.exec("sccache", ["--show-stats"]);
+        (0, exec_1.exec)("sccache", ["--show-stats"]);
     });
 }
 function run() {
