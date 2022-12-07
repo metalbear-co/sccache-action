@@ -1,5 +1,6 @@
 import * as core from "@actions/core";
 import { cacheDir, downloadTool, extractTar, find } from "@actions/tool-cache";
+import { promises as fs } from "fs";
 import * as path from "path";
 
 // Todo: make this input
@@ -19,11 +20,13 @@ function getDownloadPath(): string {
   }
 }
 
-function setCache(sccacheDirectory: string): void {
+async function setCache(sccacheDirectory: string): Promise<void> {
   core.debug("Configuring use of sccache from from path: " + sccacheDirectory);
   let binaryPath = path.join(sccacheDirectory, "sccache");
   if (process.platform == "win32") {
     binaryPath += ".exe";
+  } else {
+    await fs.chmod(binaryPath, 0o755);
   }
   core.debug("setting binary path to " + binaryPath);
   core.exportVariable("RUSTC_WRAPPER", binaryPath);
@@ -47,15 +50,21 @@ async function guardedRun(): Promise<void> {
   const sccacheDirectory = find(TOOL_NAME, VERSION, process.platform);
   if (sccacheDirectory) {
     core.debug("Found cached sccache");
-    return setCache(sccacheDirectory);
+    await setCache(sccacheDirectory);
+    return;
   }
   core.debug("Downloading sccache");
   const downloadPath = await downloadTool(getDownloadPath());
   core.debug("Extracting sccache");
   const extractedPath = await extractTar(downloadPath);
   core.debug("Caching sccache");
-  const toolPath = await cacheDir(extractedPath, TOOL_NAME, VERSION);
-  setCache(toolPath);
+  const toolPath = await cacheDir(
+    extractedPath,
+    TOOL_NAME,
+    VERSION,
+    process.platform
+  );
+  await setCache(toolPath);
 }
 
 async function run(): Promise<void> {

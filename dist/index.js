@@ -41,6 +41,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const tool_cache_1 = __nccwpck_require__(7784);
+const fs_1 = __nccwpck_require__(7147);
 const path = __importStar(__nccwpck_require__(1017));
 // Todo: make this input
 const VERSION = "0.3.1";
@@ -58,23 +59,28 @@ function getDownloadPath() {
     }
 }
 function setCache(sccacheDirectory) {
-    core.debug("Configuring use of sccache from from path: " + sccacheDirectory);
-    let binaryPath = path.join(sccacheDirectory, "sccache");
-    if (process.platform == "win32") {
-        binaryPath += ".exe";
-    }
-    core.debug("setting binary path to " + binaryPath);
-    core.exportVariable("RUSTC_WRAPPER", binaryPath);
-    if (!(process.env.ACTIONS_CACHE_URL && process.env.ACTIONS_RUNTIME_TOKEN)) {
-        throw "Missing environment variables for cache";
-    }
-    core.exportVariable("ACTIONS_CACHE_URL", process.env.ACTIONS_CACHE_URL);
-    core.exportVariable("ACTIONS_RUNTIME_TOKEN", process.env.ACTIONS_RUNTIME_TOKEN);
-    //todo: make this input
-    core.exportVariable("SCCACHE_GHA_CACHE_TO", "sccache");
-    core.exportVariable("SCCACHE_GHA_CACHE_TO", "sccache");
-    core.addPath(sccacheDirectory);
-    core.debug("Configured sccache!");
+    return __awaiter(this, void 0, void 0, function* () {
+        core.debug("Configuring use of sccache from from path: " + sccacheDirectory);
+        let binaryPath = path.join(sccacheDirectory, "sccache");
+        if (process.platform == "win32") {
+            binaryPath += ".exe";
+        }
+        else {
+            yield fs_1.promises.chmod(binaryPath, 0o755);
+        }
+        core.debug("setting binary path to " + binaryPath);
+        core.exportVariable("RUSTC_WRAPPER", binaryPath);
+        if (!(process.env.ACTIONS_CACHE_URL && process.env.ACTIONS_RUNTIME_TOKEN)) {
+            throw "Missing environment variables for cache";
+        }
+        core.exportVariable("ACTIONS_CACHE_URL", process.env.ACTIONS_CACHE_URL);
+        core.exportVariable("ACTIONS_RUNTIME_TOKEN", process.env.ACTIONS_RUNTIME_TOKEN);
+        //todo: make this input
+        core.exportVariable("SCCACHE_GHA_CACHE_TO", "sccache");
+        core.exportVariable("SCCACHE_GHA_CACHE_TO", "sccache");
+        core.addPath(sccacheDirectory);
+        core.debug("Configured sccache!");
+    });
 }
 function guardedRun() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -82,15 +88,16 @@ function guardedRun() {
         const sccacheDirectory = (0, tool_cache_1.find)(TOOL_NAME, VERSION, process.platform);
         if (sccacheDirectory) {
             core.debug("Found cached sccache");
-            return setCache(sccacheDirectory);
+            yield setCache(sccacheDirectory);
+            return;
         }
         core.debug("Downloading sccache");
         const downloadPath = yield (0, tool_cache_1.downloadTool)(getDownloadPath());
         core.debug("Extracting sccache");
         const extractedPath = yield (0, tool_cache_1.extractTar)(downloadPath);
         core.debug("Caching sccache");
-        const toolPath = yield (0, tool_cache_1.cacheDir)(extractedPath, TOOL_NAME, VERSION);
-        setCache(toolPath);
+        const toolPath = yield (0, tool_cache_1.cacheDir)(extractedPath, TOOL_NAME, VERSION, process.platform);
+        yield setCache(toolPath);
     });
 }
 function run() {
