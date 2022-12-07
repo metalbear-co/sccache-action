@@ -6627,8 +6627,8 @@ function guardedRun() {
         core.debug("Extracting sccache");
         const extractedPath = yield (0, tool_cache_1.extractTar)(downloadPath);
         core.debug("Caching sccache");
-        yield (0, tool_cache_1.cacheDir)(extractedPath, TOOL_NAME, VERSION);
-        setCache(extractedPath);
+        const toolPath = yield (0, tool_cache_1.cacheDir)(extractedPath, TOOL_NAME, VERSION);
+        setCache(toolPath);
     });
 }
 function run() {
