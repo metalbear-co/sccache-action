@@ -1,0 +1,7 @@
+name: 'Rust sccache'
+description: 'Use sccache in your CI for Rust builds'
+author: 'MetalBear'
+runs:
+  using: 'node16'
+  main: 'dist/setup/index.js'
+  post: 'dist/post/index.js'

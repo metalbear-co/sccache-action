@@ -1,0 +1,55 @@
+name: Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - releases/**
+  push:
+    branches:
+      - main
+      - releases/**
+
+jobs:
+  # Build and unit test
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Setup Node.js 16.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16.x
+        cache: npm
+    - run: npm ci
+    - name: Prettier Format Check
+      run: npm run format-check
+    - name: ESLint Check
+      run: npm run lint
+    - name: Build & Test
+      run: npm run test
+
+  # End to end cache test
+  test-cache:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Configure sccache
+      uses: ./
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly
+        components: rustfmt
+    - run: cargo new project && cd project && cargo build
+    # todo, add that it actually used it, maybe by show stats
