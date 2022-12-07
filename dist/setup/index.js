@@ -6578,20 +6578,23 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
+const exec_1 = __nccwpck_require__(1514);
 const tool_cache_1 = __nccwpck_require__(7784);
 const fs_1 = __nccwpck_require__(7147);
 const path = __importStar(__nccwpck_require__(1017));
+// WE're using a patched version provided on my repo because
+// the original repo didn't release binaries yet with GHA support.
 // Todo: make this input
-const VERSION = "0.3.1";
+const VERSION = "0.3.1-gha";
 const TOOL_NAME = "sccache";
 function getDownloadPath() {
     switch (process.platform) {
         case "darwin":
-            return `https://github.com/mozilla/sccache/releases/download/v${VERSION}/sccache-v${VERSION}-x86_64-apple-darwin.tar.gz`;
+            return `https://github.com/aviramha/sccache/releases/download/v${VERSION}/sccache-v${VERSION}-x86_64-apple-darwin.tar.gz`;
         case "linux":
-            return `https://github.com/mozilla/sccache/releases/download/v${VERSION}/sccache-v${VERSION}-x86_64-unknown-linux-musl.tar.gz`;
+            return `https://github.com/aviramha/sccache/releases/download/v${VERSION}/sccache-v${VERSION}-x86_64-unknown-linux-musl.tar.gz`;
         case "win32":
-            return `https://github.com/mozilla/sccache/releases/download/v${VERSION}/sccache-v${VERSION}-x86_64-pc-windows-msvc.tar.gz`;
+            return `https://github.com/aviramha/sccache/releases/download/v${VERSION}/sccache-v${VERSION}-x86_64-pc-windows-msvc.tar.gz`;
         default:
             throw new Error(`Unsupported platform: ${process.platform}`);
     }
@@ -6614,9 +6617,10 @@ function setCache(sccacheDirectory) {
         core.exportVariable("ACTIONS_CACHE_URL", process.env.ACTIONS_CACHE_URL);
         core.exportVariable("ACTIONS_RUNTIME_TOKEN", process.env.ACTIONS_RUNTIME_TOKEN);
         //todo: make this input
-        core.exportVariable("SCCACHE_GHA_CACHE_TO", "sccache");
-        core.exportVariable("SCCACHE_GHA_CACHE_FROM", "sccache");
+        core.exportVariable("SCCACHE_GHA_CACHE_TO", "sccache-latest");
+        core.exportVariable("SCCACHE_GHA_CACHE_FROM", "sccache-");
         core.addPath(sccacheDirectory);
+        (0, exec_1.exec)("sccache", ["--start-server"]);
         core.debug("Configured sccache!");
     });
 }
