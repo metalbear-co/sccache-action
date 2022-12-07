@@ -97,7 +97,10 @@ function guardedRun() {
         core.debug("Downloading sccache");
         const downloadPath = yield (0, tool_cache_1.downloadTool)(getDownloadPath());
         core.debug("Extracting sccache");
-        const extractedPath = yield (0, tool_cache_1.extractTar)(downloadPath);
+        const extractedPath = yield (0, tool_cache_1.extractTar)(downloadPath, undefined, [
+            "--strip-components",
+            "1",
+        ]);
         core.debug("Caching sccache");
         const toolPath = yield (0, tool_cache_1.cacheDir)(extractedPath, TOOL_NAME, VERSION, process.platform);
         yield setCache(toolPath);
