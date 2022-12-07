@@ -1,20 +1,23 @@
 import * as core from "@actions/core";
+import { exec } from "@actions/exec";
 import { cacheDir, downloadTool, extractTar, find } from "@actions/tool-cache";
 import { promises as fs } from "fs";
 import * as path from "path";
 
+// WE're using a patched version provided on my repo because
+// the original repo didn't release binaries yet with GHA support.
 // Todo: make this input
-const VERSION = "0.3.1";
+const VERSION = "0.3.1-gha";
 const TOOL_NAME = "sccache";
 
 function getDownloadPath(): string {
   switch (process.platform) {
     case "darwin":
-      return `https://github.com/mozilla/sccache/releases/download/v${VERSION}/sccache-v${VERSION}-x86_64-apple-darwin.tar.gz`;
+      return `https://github.com/aviramha/sccache/releases/download/v${VERSION}/sccache-v${VERSION}-x86_64-apple-darwin.tar.gz`;
     case "linux":
-      return `https://github.com/mozilla/sccache/releases/download/v${VERSION}/sccache-v${VERSION}-x86_64-unknown-linux-musl.tar.gz`;
+      return `https://github.com/aviramha/sccache/releases/download/v${VERSION}/sccache-v${VERSION}-x86_64-unknown-linux-musl.tar.gz`;
     case "win32":
-      return `https://github.com/mozilla/sccache/releases/download/v${VERSION}/sccache-v${VERSION}-x86_64-pc-windows-msvc.tar.gz`;
+      return `https://github.com/aviramha/sccache/releases/download/v${VERSION}/sccache-v${VERSION}-x86_64-pc-windows-msvc.tar.gz`;
     default:
       throw new Error(`Unsupported platform: ${process.platform}`);
   }
@@ -39,9 +42,10 @@ async function setCache(sccacheDirectory: string): Promise<void> {
     process.env.ACTIONS_RUNTIME_TOKEN
   );
   //todo: make this input
-  core.exportVariable("SCCACHE_GHA_CACHE_TO", "sccache");
-  core.exportVariable("SCCACHE_GHA_CACHE_FROM", "sccache");
+  core.exportVariable("SCCACHE_GHA_CACHE_TO", "sccache-latest");
+  core.exportVariable("SCCACHE_GHA_CACHE_FROM", "sccache-");
   core.addPath(sccacheDirectory);
+  exec("sccache", ["--start-server"]);
   core.debug("Configured sccache!");
 }
 
