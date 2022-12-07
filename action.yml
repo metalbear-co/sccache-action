@@ -1,4 +1,4 @@
-name: 'Rust sccache'
+name: 'Rust Cache using sccache'
 description: 'Use sccache in your CI for Rust builds'
 author: 'MetalBear'
 branding:
