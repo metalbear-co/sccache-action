@@ -1,7 +1,5 @@
 import * as core from "@actions/core";
-import * as path from "path";
-const exec = require("@actions/exec");
-const tc = require("@actions/tool-cache");
+import exec from "@actions/exec";
 
 async function guardedRun(): Promise<void> {
   core.debug("Gathering statistics");

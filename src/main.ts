@@ -1,6 +1,6 @@
 import * as core from "@actions/core";
+import tc from "@actions/tool-cache";
 import * as path from "path";
-const tc = require("@actions/tool-cache");
 
 // Todo: make this input
 const VERSION = "0.3.1";
@@ -43,13 +43,13 @@ function setCache(sccacheDirectory: string): void {
 
 async function guardedRun(): Promise<void> {
   core.debug("Trying to find cached sccache ;)");
-  let sccacheDirectory = tc.find(TOOL_NAME, VERSION, process.platform);
+  const sccacheDirectory = tc.find(TOOL_NAME, VERSION, process.platform);
   if (sccacheDirectory) {
     core.debug("Found cached sccache");
     return setCache(sccacheDirectory);
   }
   core.debug("Downloading sccache");
-  let downloadPath = await tc.downloadTool(getDownloadPath());
+  const downloadPath = await tc.downloadTool(getDownloadPath());
   core.debug("Extracting sccache");
   const extractedPath = await tc.extractTar(downloadPath);
   core.debug("Caching sccache");
