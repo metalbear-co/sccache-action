@@ -55,7 +55,7 @@ async function guardedRun(): Promise<void> {
   const extractedPath = await extractTar(downloadPath);
   core.debug("Caching sccache");
   await cacheDir(extractedPath, TOOL_NAME, VERSION);
-  setCache(sccacheDirectory);
+  setCache(extractedPath);
 }
 
 async function run(): Promise<void> {

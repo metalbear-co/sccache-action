@@ -90,7 +90,7 @@ function guardedRun() {
         const extractedPath = yield (0, tool_cache_1.extractTar)(downloadPath);
         core.debug("Caching sccache");
         yield (0, tool_cache_1.cacheDir)(extractedPath, TOOL_NAME, VERSION);
-        setCache(sccacheDirectory);
+        setCache(extractedPath);
     });
 }
 function run() {
