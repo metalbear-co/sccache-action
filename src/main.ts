@@ -7,10 +7,8 @@ import { createHash } from "crypto";
 import { promises as fs } from "fs";
 import * as path from "path";
 
-// WE're using a patched version provided on my repo because
-// the original repo didn't release binaries yet with GHA support.
 // Todo: make this input
-const VERSION = "0.3.1-gha";
+const VERSION = "0.3.3";
 const TOOL_NAME = "sccache";
 const SCCACHE_LATEST_RELEASE =
   "https://api.github.com/repos/mozilla/sccache/releases/latest";

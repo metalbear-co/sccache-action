@@ -6584,10 +6584,8 @@ const tool_cache_1 = __nccwpck_require__(7784);
 const crypto_1 = __nccwpck_require__(6113);
 const fs_1 = __nccwpck_require__(7147);
 const path = __importStar(__nccwpck_require__(1017));
-// WE're using a patched version provided on my repo because
-// the original repo didn't release binaries yet with GHA support.
 // Todo: make this input
-const VERSION = "0.3.1-gha";
+const VERSION = "0.3.3";
 const TOOL_NAME = "sccache";
 const SCCACHE_LATEST_RELEASE = "https://api.github.com/repos/mozilla/sccache/releases/latest";
 const GITHUB_API_ACCEPT_HEADER = "application/vnd.github+json";
