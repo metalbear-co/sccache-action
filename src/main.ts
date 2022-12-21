@@ -30,8 +30,13 @@ function getRustPlatform(): string {
 
 async function getLatestRelease(): Promise<string> {
   const http = new HttpClient(USER_AGENT);
+  // Even though this call doesn't require authentication,
+  // the rate limiting on GitHub Actions seems to be strict
+  // https://github.com/actions/setup-go/issues/16#issuecomment-525147263
+  const token = core.getInput("github-token");
   const res = await http.get(SCCACHE_LATEST_RELEASE, {
     Accept: GITHUB_API_ACCEPT_HEADER,
+    Authorization: token ? `Bearer ${token}` : undefined,
   });
   if (res.message.statusCode !== HttpCodes.OK) {
     throw new Error(
@@ -116,6 +121,12 @@ async function setCache(sccacheDirectory: string): Promise<void> {
 }
 
 async function guardedRun(): Promise<void> {
+  const token = core.getInput("github-token");
+  if (!token) {
+    core.warning(
+      "Using a GitHub API token is strongly recommended to avoid issues with rate limiting"
+    );
+  }
   core.debug("Trying to find cached sccache ;)");
   const sccacheDirectory = find(TOOL_NAME, VERSION, process.platform);
   if (sccacheDirectory) {
