@@ -10,8 +10,11 @@ import * as path from "path";
 // Todo: make this input
 const KNOWN_STABLE_VERSION = "0.3.3";
 const TOOL_NAME = "sccache";
-const SCCACHE_LATEST_RELEASE =
-  "https://api.github.com/repos/mozilla/sccache/releases/latest";
+// https://docs.github.com/en/rest/releases/releases?apiVersion=2022-11-28#get-the-latest-release
+const SCCACHE_RELEASES =
+  "https://api.github.com/repos/mozilla/sccache/releases";
+const SCCACHE_LATEST_RELEASE = `${SCCACHE_RELEASES}/latest`;
+const SCCACHE_KNOWN_STABLE_RELEASE = `${SCCACHE_RELEASES}/tags/v${KNOWN_STABLE_VERSION}`;
 const GITHUB_API_ACCEPT_HEADER = "application/vnd.github+json";
 const USER_AGENT = "metalbear-co/sccache-action";
 
@@ -28,16 +31,42 @@ function getRustPlatform(): string {
   }
 }
 
-async function getLatestRelease(): Promise<string> {
-  const http = new HttpClient(USER_AGENT);
+async function getLatestRelease(latest?: boolean): Promise<string> {
   // Even though this call doesn't require authentication,
   // the rate limiting on GitHub Actions seems to be strict
   // https://github.com/actions/setup-go/issues/16#issuecomment-525147263
   const token = core.getInput("github-token");
-  const res = await http.get(SCCACHE_LATEST_RELEASE, {
-    Accept: GITHUB_API_ACCEPT_HEADER,
-    Authorization: token ? `Bearer ${token}` : undefined,
+  const http = new HttpClient(USER_AGENT, undefined, {
+    headers: {
+      Accept: GITHUB_API_ACCEPT_HEADER,
+      Authorization: token ? `Bearer ${token}` : undefined,
+    },
   });
+
+  if (latest == false) {
+    // Fall back to known stable version
+    const res = await http.get(SCCACHE_KNOWN_STABLE_RELEASE);
+    if (res.message.statusCode !== HttpCodes.OK) {
+      throw new Error(
+        `Error getting known stable release: ${res.message.statusCode} ${res.message.statusMessage}`
+      );
+    }
+
+    const {
+      tag_name,
+      assets,
+    }: Endpoints["GET /repos/{owner}/{repo}/releases/tags/{tag}"]["response"]["data"] =
+      JSON.parse(await res.readBody());
+    if (assets.length === 0) {
+      throw new Error(
+        `Cannot find any prebuilt binaries for known stable version ${tag_name}`
+      );
+    }
+
+    return tag_name;
+  }
+
+  const res = await http.get(SCCACHE_LATEST_RELEASE);
   if (res.message.statusCode !== HttpCodes.OK) {
     throw new Error(
       `Error getting latest release: ${res.message.statusCode} ${res.message.statusMessage}`
@@ -50,9 +79,10 @@ async function getLatestRelease(): Promise<string> {
   }: Endpoints["GET /repos/{owner}/{repo}/releases/latest"]["response"]["data"] =
     JSON.parse(await res.readBody());
   if (assets.length === 0) {
-    throw new Error(
-      `Cannot find any prebuilt binaries for version ${tag_name}`
+    core.warning(
+      `Cannot find any prebuilt binaries for version ${tag_name}, falling back to known stable version ${KNOWN_STABLE_VERSION}`
     );
+    return await getLatestRelease(false);
   }
 
   return tag_name;

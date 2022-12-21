@@ -49,7 +49,10 @@ const path = __importStar(__nccwpck_require__(1017));
 // Todo: make this input
 const KNOWN_STABLE_VERSION = "0.3.3";
 const TOOL_NAME = "sccache";
-const SCCACHE_LATEST_RELEASE = "https://api.github.com/repos/mozilla/sccache/releases/latest";
+// https://docs.github.com/en/rest/releases/releases?apiVersion=2022-11-28#get-the-latest-release
+const SCCACHE_RELEASES = "https://api.github.com/repos/mozilla/sccache/releases";
+const SCCACHE_LATEST_RELEASE = `${SCCACHE_RELEASES}/latest`;
+const SCCACHE_KNOWN_STABLE_RELEASE = `${SCCACHE_RELEASES}/tags/v${KNOWN_STABLE_VERSION}`;
 const GITHUB_API_ACCEPT_HEADER = "application/vnd.github+json";
 const USER_AGENT = "metalbear-co/sccache-action";
 function getRustPlatform() {
@@ -64,23 +67,38 @@ function getRustPlatform() {
             return "";
     }
 }
-function getLatestRelease() {
+function getLatestRelease(latest) {
     return __awaiter(this, void 0, void 0, function* () {
-        const http = new http_client_1.HttpClient(USER_AGENT);
         // Even though this call doesn't require authentication,
         // the rate limiting on GitHub Actions seems to be strict
         // https://github.com/actions/setup-go/issues/16#issuecomment-525147263
         const token = core.getInput("github-token");
-        const res = yield http.get(SCCACHE_LATEST_RELEASE, {
-            Accept: GITHUB_API_ACCEPT_HEADER,
-            Authorization: token ? `Bearer ${token}` : undefined,
+        const http = new http_client_1.HttpClient(USER_AGENT, undefined, {
+            headers: {
+                Accept: GITHUB_API_ACCEPT_HEADER,
+                Authorization: token ? `Bearer ${token}` : undefined,
+            },
         });
+        if (latest == false) {
+            // Fall back to known stable version
+            const res = yield http.get(SCCACHE_KNOWN_STABLE_RELEASE);
+            if (res.message.statusCode !== http_client_1.HttpCodes.OK) {
+                throw new Error(`Error getting known stable release: ${res.message.statusCode} ${res.message.statusMessage}`);
+            }
+            const { tag_name, assets, } = JSON.parse(yield res.readBody());
+            if (assets.length === 0) {
+                throw new Error(`Cannot find any prebuilt binaries for known stable version ${tag_name}`);
+            }
+            return tag_name;
+        }
+        const res = yield http.get(SCCACHE_LATEST_RELEASE);
         if (res.message.statusCode !== http_client_1.HttpCodes.OK) {
             throw new Error(`Error getting latest release: ${res.message.statusCode} ${res.message.statusMessage}`);
         }
         const { tag_name, assets, } = JSON.parse(yield res.readBody());
         if (assets.length === 0) {
-            throw new Error(`Cannot find any prebuilt binaries for version ${tag_name}`);
+            core.warning(`Cannot find any prebuilt binaries for version ${tag_name}, falling back to known stable version ${KNOWN_STABLE_VERSION}`);
+            return yield getLatestRelease(false);
         }
         return tag_name;
     });
