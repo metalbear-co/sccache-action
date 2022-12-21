@@ -8,7 +8,7 @@ import { promises as fs } from "fs";
 import * as path from "path";
 
 // Todo: make this input
-const VERSION = "0.3.3";
+const KNOWN_STABLE_VERSION = "0.3.3";
 const TOOL_NAME = "sccache";
 const SCCACHE_LATEST_RELEASE =
   "https://api.github.com/repos/mozilla/sccache/releases/latest";
@@ -127,8 +127,10 @@ async function guardedRun(): Promise<void> {
       "Using a GitHub API token is strongly recommended to avoid issues with rate limiting"
     );
   }
-  core.debug("Trying to find cached sccache ;)");
-  const sccacheDirectory = find(TOOL_NAME, VERSION, process.platform);
+  // The tag name is prefixed with a "v" so we need to remove that
+  const version = (await getLatestRelease()).substring(1);
+  core.debug(`Trying to find cached sccache ${version} ;)`);
+  const sccacheDirectory = find(TOOL_NAME, version, process.platform);
   if (sccacheDirectory) {
     core.debug("Found cached sccache");
     await setCache(sccacheDirectory);
@@ -146,7 +148,7 @@ async function guardedRun(): Promise<void> {
   const toolPath = await cacheDir(
     extractedPath,
     TOOL_NAME,
-    VERSION,
+    version,
     process.platform
   );
   await setCache(toolPath);
