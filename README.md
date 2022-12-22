@@ -8,7 +8,7 @@ In your workflow, add the following step:
 ```yaml
 
 - name: Cache Rust compilation
-  uses: metalbear-co/sscache-action@v1
+  uses: metalbear-co/sccache-action@v1
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
 
