@@ -3997,8 +3997,8 @@ const core = __importStar(__nccwpck_require__(186));
 const exec_1 = __nccwpck_require__(514);
 function guardedRun() {
     return __awaiter(this, void 0, void 0, function* () {
-        core.debug("Gathering statistics");
-        (0, exec_1.exec)("sccache", ["--show-stats"]);
+        core.debug("Stopping server and gathering statistics");
+        (0, exec_1.exec)("sccache", ["--stop-server"]);
     });
 }
 function run() {

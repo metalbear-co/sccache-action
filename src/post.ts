@@ -2,8 +2,8 @@ import * as core from "@actions/core";
 import { exec } from "@actions/exec";
 
 async function guardedRun(): Promise<void> {
-  core.debug("Gathering statistics");
-  exec("sccache", ["--show-stats"]);
+  core.debug("Stopping server and gathering statistics");
+  exec("sccache", ["--stop-server"]);
 }
 
 async function run(): Promise<void> {
