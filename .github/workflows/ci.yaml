@@ -63,5 +63,6 @@ jobs:
       run: |
         cache_size=$(sccache --show-stats --stats-format json | jq .cache_size)
         if [ "$cache_size" -eq 0 ]; then
-          echo "::error::Cache size is 0"
+          echo "Cache size is 0"
+          exit 1
         fi
