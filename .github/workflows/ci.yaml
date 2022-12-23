@@ -51,5 +51,9 @@ jobs:
         profile: minimal
         toolchain: nightly
         components: rustfmt
-    - run: cargo new project && cd project && cargo build
-    # todo, add that it actually used it, maybe by show stats
+    - name: Create and build test project
+      run: |
+        cargo new project --lib
+        cd project
+        cargo build
+      # todo, add that it actually used it, maybe by show stats
