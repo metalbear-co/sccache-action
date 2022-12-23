@@ -76,7 +76,7 @@ function getLatestRelease(latest) {
         const http = new http_client_1.HttpClient(USER_AGENT, undefined, {
             headers: {
                 Accept: GITHUB_API_ACCEPT_HEADER,
-                Authorization: token ? `Bearer ${token}` : undefined,
+                Authorization: token ? `Bearer ${token}` : "",
             },
         });
         if (latest == false) {

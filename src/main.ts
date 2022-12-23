@@ -39,7 +39,7 @@ async function getLatestRelease(latest?: boolean): Promise<string> {
   const http = new HttpClient(USER_AGENT, undefined, {
     headers: {
       Accept: GITHUB_API_ACCEPT_HEADER,
-      Authorization: token ? `Bearer ${token}` : undefined,
+      Authorization: token ? `Bearer ${token}` : "",
     },
   });
 
