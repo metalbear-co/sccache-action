@@ -56,4 +56,10 @@ jobs:
         cargo new project --lib
         cd project
         cargo build
-      # todo, add that it actually used it, maybe by show stats
+    - name: Check cache size
+      shell: bash
+      run: |
+        cache_size=$(sccache --show-stats --stats-format json | jq .cache_size)
+        if [ "$cache_size" -eq 0 ]; then
+          echo "::error::Cache size is 0"
+        fi
