@@ -6579,25 +6579,104 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const exec_1 = __nccwpck_require__(1514);
+const http_client_1 = __nccwpck_require__(6255);
 const tool_cache_1 = __nccwpck_require__(7784);
+const crypto_1 = __nccwpck_require__(6113);
 const fs_1 = __nccwpck_require__(7147);
 const path = __importStar(__nccwpck_require__(1017));
-// WE're using a patched version provided on my repo because
-// the original repo didn't release binaries yet with GHA support.
 // Todo: make this input
-const VERSION = "0.3.1-gha";
+const KNOWN_STABLE_VERSION = "0.3.3";
 const TOOL_NAME = "sccache";
-function getDownloadPath() {
+// https://docs.github.com/en/rest/releases/releases?apiVersion=2022-11-28#get-the-latest-release
+const SCCACHE_RELEASES = "https://api.github.com/repos/mozilla/sccache/releases";
+const SCCACHE_LATEST_RELEASE = `${SCCACHE_RELEASES}/latest`;
+const SCCACHE_KNOWN_STABLE_RELEASE = `${SCCACHE_RELEASES}/tags/v${KNOWN_STABLE_VERSION}`;
+const GITHUB_API_ACCEPT_HEADER = "application/vnd.github+json";
+const USER_AGENT = "metalbear-co/sccache-action";
+function getRustPlatform() {
     switch (process.platform) {
         case "darwin":
-            return `https://github.com/aviramha/sccache/releases/download/v${VERSION}/sccache-v${VERSION}-x86_64-apple-darwin.tar.gz`;
+            return "apple-darwin";
         case "linux":
-            return `https://github.com/aviramha/sccache/releases/download/v${VERSION}/sccache-v${VERSION}-x86_64-unknown-linux-musl.tar.gz`;
+            return "unknown-linux-musl";
         case "win32":
-            return `https://github.com/aviramha/sccache/releases/download/v${VERSION}/sccache-v${VERSION}-x86_64-pc-windows-msvc.tar.gz`;
+            return "pc-windows-msvc";
         default:
-            throw new Error(`Unsupported platform: ${process.platform}`);
+            return "";
     }
+}
+function getLatestRelease(latest) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // Even though this call doesn't require authentication,
+        // the rate limiting on GitHub Actions seems to be strict
+        // https://github.com/actions/setup-go/issues/16#issuecomment-525147263
+        const token = core.getInput("github-token");
+        const http = new http_client_1.HttpClient(USER_AGENT, undefined, {
+            headers: {
+                Accept: GITHUB_API_ACCEPT_HEADER,
+                Authorization: token ? `Bearer ${token}` : "",
+            },
+        });
+        if (latest == false) {
+            // Fall back to known stable version
+            const res = yield http.get(SCCACHE_KNOWN_STABLE_RELEASE);
+            if (res.message.statusCode !== http_client_1.HttpCodes.OK) {
+                throw new Error(`Error getting known stable release: ${res.message.statusCode} ${res.message.statusMessage}`);
+            }
+            const { tag_name, assets, } = JSON.parse(yield res.readBody());
+            if (assets.length === 0) {
+                throw new Error(`Cannot find any prebuilt binaries for known stable version ${tag_name}`);
+            }
+            return tag_name;
+        }
+        const res = yield http.get(SCCACHE_LATEST_RELEASE);
+        if (res.message.statusCode !== http_client_1.HttpCodes.OK) {
+            throw new Error(`Error getting latest release: ${res.message.statusCode} ${res.message.statusMessage}`);
+        }
+        const { tag_name, assets, } = JSON.parse(yield res.readBody());
+        if (assets.length === 0) {
+            core.warning(`Cannot find any prebuilt binaries for version ${tag_name}, falling back to known stable version ${KNOWN_STABLE_VERSION}`);
+            return yield getLatestRelease(false);
+        }
+        return tag_name;
+    });
+}
+function getDownloadUrl() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const arch = process.arch === "x64" ? "x86_64" : "aarch64";
+        const platform = getRustPlatform();
+        if (!platform || (platform === "pc-windows-msvc" && arch === "aarch64")) {
+            // sccache does not provide prebuilt binaries for arm64 Windows
+            throw new Error(`Unsupported platform: ${process.platform}`);
+        }
+        const version = yield getLatestRelease();
+        const assetName = `sccache-${version}-${arch}-${platform}.tar.gz`;
+        return `https://github.com/mozilla/sccache/releases/download/${version}/${assetName}`;
+    });
+}
+function getExpectedSha256Hash(downloadUrl) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const sha256Url = `${downloadUrl}.sha256`;
+        const http = new http_client_1.HttpClient(USER_AGENT);
+        const res = yield http.get(sha256Url);
+        if (res.message.statusCode !== http_client_1.HttpCodes.OK) {
+            throw new Error(`Error getting release SHA-256: ${res.message.statusCode} ${res.message.statusMessage}`);
+        }
+        return res.readBody();
+    });
+}
+function download() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const downloadUrl = yield getDownloadUrl();
+        const expectedHash = yield getExpectedSha256Hash(downloadUrl);
+        const downloadPath = yield (0, tool_cache_1.downloadTool)(downloadUrl);
+        const file = yield fs_1.promises.readFile(downloadPath);
+        const actualHash = (0, crypto_1.createHash)("sha256").update(file).digest("hex");
+        if (actualHash !== expectedHash) {
+            `SHA-256 hash did not match, expected ${expectedHash}, got ${actualHash}`;
+        }
+        return downloadPath;
+    });
 }
 function setCache(sccacheDirectory) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -6626,15 +6705,21 @@ function setCache(sccacheDirectory) {
 }
 function guardedRun() {
     return __awaiter(this, void 0, void 0, function* () {
-        core.debug("Trying to find cached sccache ;)");
-        const sccacheDirectory = (0, tool_cache_1.find)(TOOL_NAME, VERSION, process.platform);
+        const token = core.getInput("github-token");
+        if (!token) {
+            core.warning("Using a GitHub API token is strongly recommended to avoid issues with rate limiting");
+        }
+        // The tag name is prefixed with a "v" so we need to remove that
+        const version = (yield getLatestRelease()).substring(1);
+        core.debug(`Trying to find cached sccache ${version} ;)`);
+        const sccacheDirectory = (0, tool_cache_1.find)(TOOL_NAME, version, process.platform);
         if (sccacheDirectory) {
             core.debug("Found cached sccache");
             yield setCache(sccacheDirectory);
             return;
         }
         core.debug("Downloading sccache");
-        const downloadPath = yield (0, tool_cache_1.downloadTool)(getDownloadPath());
+        const downloadPath = yield download();
         core.debug("Extracting sccache");
         const extractedPath = yield (0, tool_cache_1.extractTar)(downloadPath, undefined, [
             "xz",
@@ -6642,7 +6727,7 @@ function guardedRun() {
             "1",
         ]);
         core.debug("Caching sccache");
-        const toolPath = yield (0, tool_cache_1.cacheDir)(extractedPath, TOOL_NAME, VERSION, process.platform);
+        const toolPath = yield (0, tool_cache_1.cacheDir)(extractedPath, TOOL_NAME, version, process.platform);
         yield setCache(toolPath);
     });
 }
