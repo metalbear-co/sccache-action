@@ -1,6 +1,10 @@
 name: 'Rust Cache using sccache'
 description: 'Use sccache in your CI for Rust builds'
 author: 'MetalBear'
+inputs:
+  github-token:
+    description: 'A GitHub API token to use for calls to the GitHub API with higher rate limits'
+    default: ''
 branding:
   icon: 'arrow-up'
   color: 'red'
