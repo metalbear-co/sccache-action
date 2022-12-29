@@ -60,11 +60,6 @@ jobs:
         cargo build
       env:
         CARGO_INCREMENTAL: 0
-    - name: Check cache size
-      shell: bash
-      run: |
-        cache_size=$(sccache --show-stats --stats-format json | jq .cache_size)
-        if [ "$cache_size" -eq 0 ]; then
-          echo "Cache size is 0"
-          exit 1
-        fi
+    - name: Check cache hits and misses
+      # There should be at least 1 cache hit or miss
+      run: node scripts/ci.js
