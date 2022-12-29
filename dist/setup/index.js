@@ -6688,8 +6688,12 @@ function setCache(sccacheDirectory) {
         else {
             yield fs_1.promises.chmod(binaryPath, 0o755);
         }
+        // https://github.com/mozilla/sccache#usage
         core.debug("setting binary path to " + binaryPath);
         core.exportVariable("RUSTC_WRAPPER", binaryPath);
+        // https://github.com/mozilla/sccache#rust
+        core.debug("disabling incremental compilation");
+        core.exportVariable("CARGO_INCREMENTAL", 0);
         if (!(process.env.ACTIONS_CACHE_URL && process.env.ACTIONS_RUNTIME_TOKEN)) {
             throw "Missing environment variables for cache";
         }
