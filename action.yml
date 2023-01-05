@@ -5,6 +5,12 @@ inputs:
   github-token:
     description: 'A GitHub API token to use for calls to the GitHub API with higher rate limits'
     default: ''
+  cache-from:
+    description: 'The prefix of the cache key to restore from'
+    default: 'sccache-'
+  cache-to:
+    description: 'The cache key to write to'
+    default: 'sccache-latest'
 branding:
   icon: 'arrow-up'
   color: 'red'
