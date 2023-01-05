@@ -4,6 +4,8 @@ All notable changes to the project will be here.
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 ## [Unreleased]
+### Added
+- Add `cache-from` and `cache-to` as action inputs ([#11](https://github.com/metalbear-co/sccache-action/pull/11))
 
 ## [1.1.0] - 2022-12-29
 

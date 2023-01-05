@@ -161,9 +161,10 @@ function setCache(sccacheDirectory) {
         }
         core.exportVariable("ACTIONS_CACHE_URL", process.env.ACTIONS_CACHE_URL);
         core.exportVariable("ACTIONS_RUNTIME_TOKEN", process.env.ACTIONS_RUNTIME_TOKEN);
-        //todo: make this input
-        core.exportVariable("SCCACHE_GHA_CACHE_TO", "sccache-latest");
-        core.exportVariable("SCCACHE_GHA_CACHE_FROM", "sccache-");
+        const cacheFrom = core.getInput("cache-from", { required: true });
+        const cacheTo = core.getInput("cache-to", { required: true });
+        core.exportVariable("SCCACHE_GHA_CACHE_FROM", cacheFrom);
+        core.exportVariable("SCCACHE_GHA_CACHE_TO", cacheTo);
         core.addPath(sccacheDirectory);
         (0, exec_1.exec)("sccache", ["--start-server"]);
         core.debug("Configured sccache!");
